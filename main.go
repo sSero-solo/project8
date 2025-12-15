@@ -37,7 +37,7 @@ func (s ParcelService) Register(client int, address string) (Parcel, error) {
 		Client:    client,
 		Status:    ParcelStatusRegistered,
 		Address:   address,
-		CreatedAt: time.Now().UTC().Format("2006-01-02E15:04:05Z"),
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 
 	id, err := s.store.Add(parcel)

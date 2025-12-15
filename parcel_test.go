@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
 )
@@ -53,11 +54,11 @@ func TestAddGetDelete(t *testing.T) {
 	// get
 	storedParcel, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, id, storedParcel.Number, "Parcel number mismatch")
-	require.Equal(t, parcel.Client, storedParcel.Client, "Client mismatch")
-	require.Equal(t, parcel.Status, storedParcel.Status, "Status mismatch")
-	require.Equal(t, parcel.Address, storedParcel.Address, "Address mismatch")
-	require.NotEmpty(t, storedParcel.CreatedAt, "CreatedAt should not be empty")
+	assert.Equal(t, id, storedParcel.Number, "Parcel number mismatch")
+	assert.Equal(t, parcel.Client, storedParcel.Client, "Client mismatch")
+	assert.Equal(t, parcel.Status, storedParcel.Status, "Status mismatch")
+	assert.Equal(t, parcel.Address, storedParcel.Address, "Address mismatch")
+	assert.Equal(t, parcel.CreatedAt, storedParcel.CreatedAt, "CreatedAt should match exactly")
 
 	// delete
 	err = store.Delete(id)
@@ -102,7 +103,7 @@ func TestSetAddress(t *testing.T) {
 	// check
 	storedParcel, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, newAddress, storedParcel.Address, "Address should be updated")
+	assert.Equal(t, newAddress, storedParcel.Address, "Address should be updated")
 }
 
 func TestSetStatus(t *testing.T) {
@@ -139,16 +140,14 @@ func TestSetStatus(t *testing.T) {
 	// check
 	storedParcel, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, newStatus, storedParcel.Status, "Status should be updated")
+	assert.Equal(t, newStatus, storedParcel.Status, "Status should be updated")
 }
 
 func TestGetByClient(t *testing.T) {
-	// prepare
 	db, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err)
 	defer db.Close()
 
-	// Создаем таблицу
 	_, err = db.Exec(`
 		CREATE TABLE parcel (
 			number INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -179,7 +178,7 @@ func TestGetByClient(t *testing.T) {
 	for i := 0; i < len(parcels); i++ {
 		id, err := store.Add(parcels[i])
 		require.NoError(t, err)
-		require.NotZero(t, id)
+		assert.NotZero(t, id)
 
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = id
@@ -191,18 +190,15 @@ func TestGetByClient(t *testing.T) {
 	// get by client
 	storedParcels, err := store.GetByClient(client)
 	require.NoError(t, err)
-	require.Len(t, storedParcels, 3, "Should get 3 parcels for client")
+	assert.Len(t, storedParcels, 3, "Should get 3 parcels for client")
 
 	// check
 	for _, storedParcel := range storedParcels {
 		originalParcel, exists := parcelMap[storedParcel.Number]
-		require.True(t, exists, "Parcel should exist in map")
+		assert.True(t, exists, "Parcel with number %d should exist in map", storedParcel.Number)
 
-		require.Equal(t, originalParcel.Number, storedParcel.Number)
-		require.Equal(t, originalParcel.Client, storedParcel.Client)
-		require.Equal(t, originalParcel.Status, storedParcel.Status)
-		require.Equal(t, originalParcel.Address, storedParcel.Address)
-		require.NotEmpty(t, storedParcel.CreatedAt)
+		// Сравниваем всю структуру
+		assert.Equal(t, originalParcel, storedParcel)
 	}
 }
 

@@ -109,31 +109,9 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 }
 
 func (s ParcelStore) SetAddress(number int, address string) error {
-	// реализуйте обновление адреса в таблице parcel
-	// менять адрес можно только если значение статуса registered
-
-	// Проверяем текущий статус
-	var currentStatus string
-	err := s.db.QueryRow(
-		"SELECT status FROM parcel WHERE number = ?",
-		number,
-	).Scan(&currentStatus)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("parcel with number %d not found", number)
-		}
-		return fmt.Errorf("failed to check parcel status: %w", err)
-	}
-
-	if currentStatus != ParcelStatusRegistered {
-		return errors.New("can only change address for registered parcels")
-	}
-
-	// Обновляем адрес
 	result, err := s.db.Exec(
-		"UPDATE parcel SET address = ? WHERE number = ?",
-		address, number,
+		"UPDATE parcel SET address = ? WHERE number = ? AND status = ?",
+		address, number, ParcelStatusRegistered,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update address: %w", err)
@@ -145,38 +123,16 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("parcel with number %d not found", number)
+		return errors.New("can only change address for registered parcels")
 	}
 
 	return nil
 }
 
 func (s ParcelStore) Delete(number int) error {
-	// реализуйте удаление строки из таблицы parcel
-	// удалять строку можно только если значение статуса registered
-
-	// Проверяем текущий статус
-	var currentStatus string
-	err := s.db.QueryRow(
-		"SELECT status FROM parcel WHERE number = ?",
-		number,
-	).Scan(&currentStatus)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("parcel with number %d not found", number)
-		}
-		return fmt.Errorf("failed to check parcel status: %w", err)
-	}
-
-	if currentStatus != ParcelStatusRegistered {
-		return errors.New("can only delete registered parcels")
-	}
-
-	// Удаляем посылку
 	result, err := s.db.Exec(
-		"DELETE FROM parcel WHERE number = ?",
-		number,
+		"DELETE FROM parcel WHERE number = ? AND status = ?",
+		number, ParcelStatusRegistered,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to delete parcel: %w", err)
@@ -188,7 +144,7 @@ func (s ParcelStore) Delete(number int) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("parcel with number %d not found", number)
+		return errors.New("can only delete registered parcels")
 	}
 
 	return nil
